@@ -1,24 +1,37 @@
-import { Button } from "@/components/ui/button";
-import { prisma } from "@/lib/db";
-import Image from "next/image";
+"use client";
 
-export default async function Home() {
-  const users = await prisma.user.findMany();
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useTRPC } from "@/trpc/client";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+
+export default function Home() {
+  const [value, setValue] = useState("");
+  const trpc = useTRPC();
+  const invoke = useMutation(
+    trpc.invoke.mutationOptions({
+      onSuccess: (data) => {
+        toast.success("background job started");
+        console.log("Function invoked successfully:", data);
+      },
+      onError: (error) => {
+        console.error("Error invoking function:", error);
+      },
+    })
+  );
   return (
     <>
-      <Button variant={"destructive"} >button</Button>
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center -mt-16">
-      <h1 className="text-4xl font-bold mb-8 font-[family-name:var(--font-geist-sans)] text-[#333333]">
-        Superblog
-      </h1>
-      <ol className="list-decimal list-inside font-[family-name:var(--font-geist-sans)]">
-        {users.map((user) => (
-          <li key={user.id} className="mb-2">
-            {user.name}
-          </li>
-        ))}
-      </ol>
-    </div>
+      <div>
+        <Input value={value} onChange={(e) => setValue(e.target.value)} />
+        <Button
+          disabled={invoke.isPending}
+          onClick={() => invoke.mutate({ value: value })}
+        >
+          invoke function
+        </Button>
+      </div>
     </>
   );
 }
